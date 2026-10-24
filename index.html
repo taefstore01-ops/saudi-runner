@@ -164,6 +164,7 @@ const SPEED_GAIN = 0.35;         // per second
 const GRAVITY = 42;
 const JUMP_V = 14.5;
 const SLIDE_TIME = 0.9;
+const FLIP_TIME = (2 * JUMP_V / GRAVITY) * 0.92;   // a full turn within the jump's air time
 const SPAWN_Z = -165;            // where new things appear
 const DESPAWN_Z = 12;
 
@@ -357,6 +358,14 @@ scene.add(regionStatic);
 // ---------- Hero ----------
 const hero = new THREE.Group();
 scene.add(hero);
+// the character hangs from a pivot at mid-body so the jump can be a somersault around its centre
+const FLIP_PIVOT = 1.05;
+const spin = new THREE.Group();
+spin.position.y = FLIP_PIVOT;
+hero.add(spin);
+const body = new THREE.Group();
+body.position.y = -FLIP_PIVOT;
+spin.add(body);
 const heroShadow = new THREE.Mesh(new THREE.CircleGeometry(0.55, 20),
   new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.28, depthWrite: false }));
 heroShadow.rotation.x = -Math.PI / 2;
@@ -478,15 +487,15 @@ function loadModels(done) {
 }
 
 function setHero(id) {
-  hero.remove(fallback);
-  if (model) hero.remove(model.holder);
+  body.remove(fallback);
+  if (model) body.remove(model.holder);
   model = MODELS[id] || null;
   if (model) {
-    hero.add(model.holder);
+    body.add(model.holder);
     if (model.current) model.current.stop();
     model.current = null;
     model.once = null;
-  } else hero.add(fallback);
+  } else body.add(fallback);
   save.hero = id;
 }
 
@@ -965,6 +974,7 @@ const state = {
   distance: 0, cans: 0,
   lane: 1, x: 0, y: 0, vy: 0, sliding: 0,
   deadT: 0, shake: 0,
+  flip: -1,         // seconds into the somersault, -1 when not flipping
 };
 let pendingVictory = false;
 
@@ -976,7 +986,8 @@ function clearWorld() {
 }
 function resetRun(faceCamera = false) {
   clearWorld();
-  Object.assign(state, { speed: START_SPEED, distance: 0, cans: 0, lane: 1, x: 0, y: 0, vy: 0, sliding: 0, deadT: 0, shake: 0 });
+  Object.assign(state, { speed: START_SPEED, distance: 0, cans: 0, lane: 1, x: 0, y: 0, vy: 0, sliding: 0, deadT: 0, shake: 0, flip: -1 });
+  spin.rotation.x = 0;
   hero.position.set(0, 0, 0);
   hero.rotation.set(0, faceCamera ? 0 : Math.PI, 0);   // menu: show the hero's front
   nextSideZ[-1] = nextSideZ[1] = 10;
@@ -994,11 +1005,11 @@ function moveLane(d) {
 }
 function jump() {
   if (state.mode !== 'play') return;
-  if (state.y <= 0.01) { state.vy = JUMP_V; state.sliding = 0; sfx.jump(); }
+  if (state.y <= 0.01) { state.vy = JUMP_V; state.sliding = 0; state.flip = 0; sfx.jump(); }
 }
 function slide() {
   if (state.mode !== 'play') return;
-  if (state.y > 0.01) state.vy = -JUMP_V * 1.3;     // fast-fall
+  if (state.y > 0.01) { state.vy = -JUMP_V * 1.3; state.flip = -1; }   // fast-fall, cancels the flip
   if (state.sliding <= 0) sfx.slide();
   state.sliding = SLIDE_TIME;
 }
@@ -1151,7 +1162,11 @@ function update(dt) {
     s.x = THREE.MathUtils.lerp(s.x, LANES[s.lane], Math.min(1, dt * 14));
     s.vy -= GRAVITY * dt;
     s.y = Math.max(0, s.y + s.vy * dt);
-    if (s.y === 0) s.vy = 0;
+    if (s.y === 0) { s.vy = 0; s.flip = -1; }
+    // forward somersault over the whole time in the air (eased so it tucks in the middle)
+    if (s.flip >= 0) s.flip += dt;
+    const k = s.flip >= 0 ? Math.min(1, s.flip / FLIP_TIME) : 0;
+    spin.rotation.x = s.flip >= 0 ? Math.PI * 2 * (k * k * (3 - 2 * k)) : THREE.MathUtils.lerp(spin.rotation.x % (Math.PI * 2), 0, 0.4);
     if (s.sliding > 0) s.sliding -= dt;
     hero.position.set(s.x, s.y, 0);
     hero.rotation.z = (LANES[s.lane] - s.x) * 0.12;   // lean into lane change
@@ -1244,7 +1259,7 @@ loadModels(() => {
   refreshLobby();
   show('startScreen');
 });
-window.__saifman = { state, update, startGame, MODELS, playClip, applyRegion, resetRun, get model() { return model; } };   // debug hook
+window.__saifman = { state, update, startGame, MODELS, camera, hero, playClip, applyRegion, resetRun, get model() { return model; } };   // debug hook
 })();
 </script>
 </body>
