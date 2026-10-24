@@ -466,6 +466,29 @@ function prepModel(id, gltf) {
   MODELS[id] = { holder, mixer, actions, slideRange, current: null, once: null };
 }
 
+// Both characters share the same Mixamo skeleton, so one without a usable slide borrows another's.
+// Only rotations are copied (the bones keep their own lengths); the hips height is rescaled.
+function shareSlides() {
+  const donor = Object.values(MODELS).find(m => m.actions.slide);
+  if (!donor) return;
+  const hipsY = m => { let y = 1; m.holder.traverse(o => { if (o.isBone && /hips$/i.test(o.name)) y = o.position.y; }); return y; };
+  const src = donor.actions.slide.getClip();
+  Object.values(MODELS).forEach(m => {
+    if (m.actions.slide) return;
+    const k = hipsY(m) / hipsY(donor);
+    const tracks = src.tracks.filter(t => t.name.endsWith('.quaternion') || /hips\.position$/i.test(t.name)).map(t => {
+      const c = t.clone();
+      if (c.name.endsWith('.position')) c.values = c.values.map(v => v * k);
+      return c;
+    });
+    const a = m.mixer.clipAction(new THREE.AnimationClip(src.name, src.duration, tracks));
+    a.setLoop(THREE.LoopOnce);
+    a.clampWhenFinished = true;
+    m.actions.slide = a;
+    m.slideRange = donor.slideRange;
+  });
+}
+
 function loadModels(done) {
   let left = CHARACTERS.length;
   const finish = () => { if (--left === 0) done(); };
@@ -1252,6 +1275,7 @@ resetRun(true);
 setHero(save.hero);
 frame();
 loadModels(() => {
+  shareSlides();
   setHero(MODELS[save.hero] ? save.hero : (Object.keys(MODELS)[0] || save.hero));
   if (model) model.once = model.actions.wave ? 'wave' : null;
   $('loading').style.display = 'none';
