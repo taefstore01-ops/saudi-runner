@@ -73,6 +73,20 @@
   .card .ok { position: absolute; top: 10px; left: 10px; background: var(--gold); color: var(--deep); font-weight: 900; border-radius: 12px; padding: 2px 10px; font-size: 13px; display: none; }
   .card.on .ok { display: block; }
 
+  #shopScreen { justify-content: flex-start; overflow-y: auto; background: rgba(4,12,34,.94); }
+  .wallet { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,197,49,.15); border: 2px solid rgba(255,197,49,.5); border-radius: 16px; padding: 4px 16px; font-weight: 900; font-size: 22px; }
+  #shopGrid { grid-template-columns: repeat(auto-fill, minmax(min(46%, 200px), 1fr)); max-width: 820px; }
+  #shopGrid .card img, #shopGrid .card .soon { display: block; width: 100%; aspect-ratio: 3 / 4; object-fit: cover; background: radial-gradient(circle at 50% 35%, #1c6b4a, #06231a); }
+  #shopGrid .card .soon { display: flex; align-items: center; justify-content: center; font-size: 64px; opacity: .5; }
+  #shopGrid .card.locked img { filter: grayscale(.7) brightness(.6); }
+  .buy { display: block; width: 100%; margin-top: 6px; border: none; border-radius: 12px; padding: 6px; font-weight: 900; font-size: 16px; cursor: pointer; background: var(--gold); color: var(--deep); }
+  .buy.owned { background: rgba(255,255,255,.18); color: #fff; }
+  .buy.sel { background: #2ecc71; color: #06301f; }
+  .buy.confirm { background: var(--red); color: #fff; }
+  .buy.poor { background: rgba(255,255,255,.12); color: rgba(255,255,255,.7); }
+  .shake { animation: shake .35s; }
+  @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+  .pick.shop { flex: 0 0 auto; background: linear-gradient(180deg, #2ecc71, #18a058); border-color: rgba(255,255,255,.35); }
   .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; width: min(420px, 100%); }
   .stat { background: rgba(7,26,74,.75); border-radius: 16px; padding: 10px 6px; border: 2px solid rgba(255,255,255,.15); }
   .stat .v { font-size: 30px; font-weight: 900; }
@@ -132,6 +146,14 @@
   </div>
 </div>
 
+<div class="screen" id="shopScreen">
+  <div class="sub">المتجر</div>
+  <div class="wallet"><span id="walletShop">0</span><span class="can-ico"></span></div>
+  <div class="hint" id="shopMsg">اجمع العلب أثناء الجري وافتح بها شخصيات جديدة</div>
+  <div class="grid" id="shopGrid"></div>
+  <button class="btn ghost" id="shopBack">رجوع</button>
+</div>
+
 <div class="screen" id="regionScreen">
   <div class="sub">اختر المنطقة</div>
   <div class="grid" id="regionGrid"></div>
@@ -177,9 +199,10 @@ const FLIP_TIME = (2 * JUMP_V / GRAVITY) * 0.92;   // a full turn within the jum
 const SPAWN_Z = -165;            // where new things appear
 const DESPAWN_Z = 12;
 
+// price 0 = free. A new character = an entry here + models/<id>.js (tools/wrap_model.py).
 const CHARACTERS = [
-  { id: 'saif', name: 'سيف' },
-  { id: 'sadeem', name: 'سديم' },
+  { id: 'saif', name: 'سيف', tag: 'البطل الأول', price: 0 },
+  { id: 'sadeem', name: 'سديم', tag: 'البطلة السريعة', price: 0 },
 ];
 
 // Look of each region. Sky / fog colours come from the Stitch art (art/regions.js).
@@ -201,11 +224,12 @@ const ART = window.SAIFMAN_REGIONS || {};
 
 // ---------- Save ----------
 const save = (() => {
-  const d = { best: 0, cans: 0, hero: 'saif', region: 'riyadh' };
+  const d = { best: 0, cans: 0, hero: 'saif', region: 'riyadh', owned: [] };   // cans = wallet
   try { return Object.assign(d, JSON.parse(localStorage.getItem('saifman.save')) || {}); }
   catch (e) { return d; }
 })();
 function writeSave() { try { localStorage.setItem('saifman.save', JSON.stringify(save)); } catch (e) {} }
+const owns = c => !c.price || save.owned.includes(c.id);
 
 // ---------- Renderer / scene ----------
 const canvas = document.getElementById('game');
@@ -1082,14 +1106,14 @@ function levelUp(level) {
   toastTimer = setTimeout(() => ui.toast.classList.remove('on'), 1300);
   sfx.level();
 }
-const SCREENS = ['startScreen', 'regionScreen', 'pauseScreen', 'overScreen'];
+const SCREENS = ['startScreen', 'regionScreen', 'shopScreen', 'pauseScreen', 'overScreen'];
 function show(id) {
   SCREENS.forEach(s => $(s).classList.toggle('show', s === id));
   ui.hud.style.display = (state.mode === 'play' || state.mode === 'paused') ? 'flex' : 'none';
   ui.levelChip.style.display = ui.hud.style.display;
 }
 function refreshLobby() {
-  $('bestLine').textContent = save.best ? `أفضل نتيجة: ${save.best} · مجموع العلب: ${save.cans}` : '';
+  $('bestLine').textContent = `رصيدك: ${save.cans} علبة` + (save.best ? ` · أفضل نتيجة: ${save.best}` : '');
   $('regionName').textContent = `${region.name} — ${region.tag}`;
   const art = ART[region.id];
   $('regionImg').src = art ? art.street : '';
@@ -1097,20 +1121,85 @@ function refreshLobby() {
   [...$('heroPicker').children].forEach(b => b.classList.toggle('on', b.dataset.id === save.hero));
   [...$('regionGrid').children].forEach(c => c.classList.toggle('on', c.dataset.id === region.id));
 }
-// character buttons
-CHARACTERS.forEach(c => {
-  const b = document.createElement('button');
-  b.className = 'pick';
-  b.dataset.id = c.id;
-  b.innerHTML = `${c.name}<small>شخصية</small>`;
-  b.onclick = () => {
-    if (save.hero === c.id) return;
-    setHero(c.id);
-    if (model) model.once = model.actions.wave ? 'wave' : (model.actions.victory ? 'victory' : null);
-    writeSave(); refreshLobby();
-  };
-  $('heroPicker').appendChild(b);
-});
+function chooseHero(id) {
+  if (save.hero === id) return;
+  setHero(id);
+  if (model) model.once = model.actions.wave ? 'wave' : (model.actions.victory ? 'victory' : null);
+  writeSave(); refreshLobby();
+}
+// lobby: the characters you own + the shop
+function buildHeroPicker() {
+  const box = $('heroPicker');
+  box.innerHTML = '';
+  CHARACTERS.filter(owns).forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'pick';
+    b.dataset.id = c.id;
+    b.innerHTML = `${c.name}<small>${c.tag}</small>`;
+    b.onclick = () => chooseHero(c.id);
+    box.appendChild(b);
+  });
+  const shop = document.createElement('button');
+  shop.className = 'pick shop';
+  shop.innerHTML = '🛒<small>المتجر</small>';
+  shop.onclick = () => { buildShop(); show('shopScreen'); };
+  box.appendChild(shop);
+}
+
+// shop: buy characters with cans (two taps to confirm)
+const portraits = {};
+let confirmId = null, confirmTimer = 0;
+function buildShop() {
+  $('walletShop').textContent = save.cans;
+  const grid = $('shopGrid');
+  grid.innerHTML = '';
+  CHARACTERS.forEach(c => {
+    const have = owns(c), selected = save.hero === c.id;
+    const card = document.createElement('div');
+    card.className = 'card' + (selected ? ' on' : '') + (have ? '' : ' locked');
+    let label, cls;
+    if (selected) { label = 'مختارة'; cls = 'sel'; }
+    else if (have) { label = 'اختيار'; cls = 'owned'; }
+    else if (confirmId === c.id) { label = 'تأكيد الشراء؟'; cls = 'confirm'; }
+    else { label = `🔒 ${c.price} علبة`; cls = save.cans >= c.price ? '' : 'poor'; }
+    card.innerHTML = `${portraits[c.id] ? `<img src="${portraits[c.id]}" alt="">` : '<div class="soon">🏃</div>'}
+      <div class="info"><div class="n">${c.name}</div><div class="tg">${c.tag}</div><button class="buy ${cls}">${label}</button></div>`;
+    card.onclick = () => shopTap(c, card);
+    grid.appendChild(card);
+  });
+  const soon = document.createElement('div');
+  soon.className = 'card locked';
+  soon.style.cursor = 'default';
+  soon.innerHTML = '<div class="soon">✨</div><div class="info"><div class="n">قريباً</div><div class="tg">شخصيات جديدة في الطريق</div></div>';
+  grid.appendChild(soon);
+}
+function shopTap(c, card) {
+  if (owns(c)) { chooseHero(c.id); buildShop(); return; }
+  if (save.cans < c.price) {
+    $('shopMsg').textContent = `تحتاج ${c.price - save.cans} علبة أخرى لشراء ${c.name}`;
+    card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+    return;
+  }
+  if (confirmId !== c.id) {                      // first tap arms the purchase
+    confirmId = c.id;
+    clearTimeout(confirmTimer);
+    confirmTimer = setTimeout(() => { confirmId = null; buildShop(); }, 3000);
+    buildShop();
+    return;
+  }
+  confirmId = null;
+  clearTimeout(confirmTimer);
+  save.cans -= c.price;
+  save.owned.push(c.id);
+  writeSave();
+  sfx.level();
+  $('shopMsg').textContent = `مبروك! صار ${c.name} من أبطالك`;
+  buildHeroPicker();
+  chooseHero(c.id);
+  buildShop();
+}
+$('shopBack').onclick = () => { confirmId = null; show('startScreen'); };
+buildHeroPicker();
 // region cards
 REGIONS.forEach(r => {
   const card = document.createElement('div');
@@ -1303,8 +1392,42 @@ applyRegion(save.region);
 resetRun(true);
 setHero(save.hero);
 frame();
+// Renders each character standing in idle into a small picture for the shop cards.
+function makePortraits() {
+  let pr;
+  try {
+    pr = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+  } catch (e) { return; }
+  pr.setSize(240, 320);
+  pr.outputEncoding = THREE.sRGBEncoding;
+  const ps = new THREE.Scene();
+  ps.add(new THREE.HemisphereLight(0xffffff, 0x445544, 1.1));
+  const key = new THREE.DirectionalLight(0xffffff, 0.9);
+  key.position.set(2, 4, 5);
+  ps.add(key);
+  const cam = new THREE.PerspectiveCamera(30, 240 / 320, 0.1, 50);
+  cam.position.set(0, 1.25, 5.4);
+  cam.lookAt(0, 1.05, 0);
+  for (const [id, m] of Object.entries(MODELS)) {
+    const parent = m.holder.parent;
+    ps.add(m.holder);
+    m.mixer.stopAllAction();
+    const idle = m.actions.idle;
+    if (idle) { idle.reset().play(); idle.time = 1; }
+    m.mixer.update(0);
+    pr.render(ps, cam);
+    portraits[id] = pr.domElement.toDataURL('image/png');
+    m.mixer.stopAllAction();
+    m.current = null;
+    if (parent) parent.add(m.holder); else ps.remove(m.holder);
+  }
+  pr.dispose();
+  pr.forceContextLoss();
+}
+
 loadModels(() => {
   shareSlides();
+  makePortraits();
   setHero(MODELS[save.hero] ? save.hero : (Object.keys(MODELS)[0] || save.hero));
   if (model) model.once = model.actions.wave ? 'wave' : null;
   $('loading').style.display = 'none';
@@ -1312,7 +1435,7 @@ loadModels(() => {
   refreshLobby();
   show('startScreen');
 });
-window.__saifman = { state, update, startGame, MODELS, camera, hero, playClip, applyRegion, resetRun, get model() { return model; } };   // debug hook
+window.__saifman = { state, update, startGame, MODELS, camera, hero, CHARACTERS, save, buildShop, buildHeroPicker, portraits, playClip, applyRegion, resetRun, get model() { return model; } };   // debug hook
 })();
 </script>
 </body>
