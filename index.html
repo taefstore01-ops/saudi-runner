@@ -72,6 +72,9 @@
   .card .tg { font-size: 13px; opacity: .85; }
   .card .ok { position: absolute; top: 10px; left: 10px; background: var(--gold); color: var(--deep); font-weight: 900; border-radius: 12px; padding: 2px 10px; font-size: 13px; display: none; }
   .card.on .ok { display: block; }
+  .card.locked img { filter: grayscale(.6) brightness(.65); }
+  .card .lock { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,.65); color: #fff; font-weight: 900; border-radius: 12px; padding: 2px 10px; font-size: 13px; }
+  .card .lock.confirm { background: var(--red); }
 
   #shopScreen { justify-content: flex-start; overflow-y: auto; background: rgba(4,12,34,.94); }
   .wallet { display: inline-flex; align-items: center; gap: 8px; background: rgba(255,197,49,.15); border: 2px solid rgba(255,197,49,.5); border-radius: 16px; padding: 4px 16px; font-weight: 900; font-size: 22px; }
@@ -156,6 +159,8 @@
 
 <div class="screen" id="regionScreen">
   <div class="sub">اختر المنطقة</div>
+  <div class="wallet"><span id="walletRegion">0</span><span class="can-ico"></span></div>
+  <div class="hint" id="regionMsg">افتح مدناً جديدة بالعلب التي تجمعها</div>
   <div class="grid" id="regionGrid"></div>
   <button class="btn ghost" id="regionBack">رجوع</button>
 </div>
@@ -206,30 +211,32 @@ const CHARACTERS = [
 ];
 
 // Look of each region. Sky / fog colours come from the Stitch art (art/regions.js).
+// price 0 = free; a priced region is bought with cans on the region screen.
 const REGIONS = [
-  { id: 'riyadh', name: 'الرياض', tag: 'قلب المملكة', left: 'najdi', right: 'najdi', ground: 0xc9a774, walk: 0xe2cfae,
+  { id: 'riyadh', price: 0, name: 'الرياض', tag: 'قلب المملكة', left: 'najdi', right: 'najdi', ground: 0xc9a774, walk: 0xe2cfae,
     sun: [0xffc27a, 1.15], hemi: [0xffe3bd, 0x7a5a3c, 0.75], trees: 'palm', lamps: 'classic' },
-  { id: 'jeddah', name: 'جدة', tag: 'عروس البحر الأحمر', left: 'hijazi', right: 'hijazi', ground: 0xb9a48d, walk: 0xe4d6c6,
+  { id: 'jeddah', price: 0, name: 'جدة', tag: 'عروس البحر الأحمر', left: 'hijazi', right: 'hijazi', ground: 0xb9a48d, walk: 0xe4d6c6,
     sun: [0xffc9b0, 1.05], hemi: [0xffe0ee, 0x6a5a55, 0.8], trees: 'palm', lamps: 'classic' },
-  { id: 'dammam', name: 'الدمام', tag: 'لؤلؤة الخليج', left: 'modern', right: 'sea', ground: 0xb7b9ae, walk: 0xd9dde2,
+  { id: 'dammam', price: 0, name: 'الدمام', tag: 'لؤلؤة الخليج', left: 'modern', right: 'sea', ground: 0xb7b9ae, walk: 0xd9dde2,
     sun: [0xfff6e6, 1.2], hemi: [0xe2f2ff, 0x5c6a72, 0.85], trees: 'palm', lamps: 'classic' },
-  { id: 'makkah', name: 'مكة المكرمة', tag: 'أطهر البقاع', left: 'makkah', right: 'makkah', ground: 0x7d6e5e, walk: 0xd8cfbf,
+  { id: 'makkah', price: 0, name: 'مكة المكرمة', tag: 'أطهر البقاع', left: 'makkah', right: 'makkah', ground: 0x7d6e5e, walk: 0xd8cfbf,
     sun: [0xffd9a0, 0.8], hemi: [0xbfe8d8, 0x3c3a36, 0.75], trees: 'palm', lamps: 'green' },
-  { id: 'alula', name: 'العلا', tag: 'متحف مفتوح', left: 'rock', right: 'rock', ground: 0xa8663c, walk: 0xc9a27a,
+  { id: 'alula', price: 0, name: 'العلا', tag: 'متحف مفتوح', left: 'rock', right: 'rock', ground: 0xa8663c, walk: 0xc9a27a,
     sun: [0xffb27a, 0.75], hemi: [0xffd2b0, 0x5a3424, 0.7], trees: 'none', lamps: 'lantern' },
-  { id: 'jazan', name: 'جازان', tag: 'سلة فواكه المملكة', left: 'jazan', right: 'jazan', ground: 0x5f9a3f, walk: 0xcdbf9c,
+  { id: 'jazan', price: 0, name: 'جازان', tag: 'سلة فواكه المملكة', left: 'jazan', right: 'jazan', ground: 0x5f9a3f, walk: 0xcdbf9c,
     sun: [0xfff1d0, 1.15], hemi: [0xe6fff0, 0x3f5a2c, 0.85], trees: 'mango', lamps: 'none' },
 ];
 const ART = window.SAIFMAN_REGIONS || {};
 
 // ---------- Save ----------
 const save = (() => {
-  const d = { best: 0, cans: 0, hero: 'saif', region: 'riyadh', owned: [] };   // cans = wallet
+  const d = { best: 0, cans: 0, hero: 'saif', region: 'riyadh', owned: [], ownedRegions: [] };   // cans = wallet
   try { return Object.assign(d, JSON.parse(localStorage.getItem('saifman.save')) || {}); }
   catch (e) { return d; }
 })();
 function writeSave() { try { localStorage.setItem('saifman.save', JSON.stringify(save)); } catch (e) {} }
 const owns = c => !c.price || save.owned.includes(c.id);
+const ownsRegion = r => !r.price || save.ownedRegions.includes(r.id);
 
 // ---------- Renderer / scene ----------
 const canvas = document.getElementById('game');
@@ -1200,24 +1207,57 @@ function shopTap(c, card) {
 }
 $('shopBack').onclick = () => { confirmId = null; show('startScreen'); };
 buildHeroPicker();
-// region cards
-REGIONS.forEach(r => {
-  const card = document.createElement('div');
-  card.className = 'card';
-  card.dataset.id = r.id;
-  const art = ART[r.id];
-  card.innerHTML = `${art ? `<img src="${art.street}" alt="">` : '<div style="aspect-ratio:16/9"></div>'}
-    <div class="ok">مختارة</div><div class="info"><div class="n">${r.name}</div><div class="tg">${r.tag}</div></div>`;
-  card.onclick = () => {
-    applyRegion(r.id);
-    resetRun(true);
-    writeSave();
-    show('startScreen');
-  };
-  $('regionGrid').appendChild(card);
-});
-$('regionBtn').onclick = () => show('regionScreen');
-$('regionBack').onclick = () => show('startScreen');
+// region cards: free / owned regions are picked, priced ones are bought with cans (two taps)
+let confirmRegion = null, confirmRegionTimer = 0;
+function buildRegions() {
+  $('walletRegion').textContent = save.cans;
+  const grid = $('regionGrid');
+  grid.innerHTML = '';
+  REGIONS.forEach(r => {
+    const have = ownsRegion(r);
+    const card = document.createElement('div');
+    card.className = 'card' + (r.id === region.id ? ' on' : '') + (have ? '' : ' locked');
+    card.dataset.id = r.id;
+    const art = ART[r.id];
+    const lock = have ? '' : (confirmRegion === r.id
+      ? '<div class="lock confirm">تأكيد الشراء؟</div>'
+      : `<div class="lock">🔒 ${r.price} علبة</div>`);
+    card.innerHTML = `${art ? `<img src="${art.street}" alt="">` : '<div style="aspect-ratio:16/9"></div>'}
+      <div class="ok">مختارة</div>${lock}<div class="info"><div class="n">${r.name}</div><div class="tg">${r.tag}</div></div>`;
+    card.onclick = () => regionTap(r, card);
+    grid.appendChild(card);
+  });
+}
+function pickRegion(id) {
+  applyRegion(id);
+  resetRun(true);
+  writeSave();
+  show('startScreen');
+}
+function regionTap(r, card) {
+  if (ownsRegion(r)) { pickRegion(r.id); return; }
+  if (save.cans < r.price) {
+    $('regionMsg').textContent = `تحتاج ${r.price - save.cans} علبة أخرى لفتح ${r.name}`;
+    card.classList.remove('shake'); void card.offsetWidth; card.classList.add('shake');
+    return;
+  }
+  if (confirmRegion !== r.id) {                  // first tap arms the purchase
+    confirmRegion = r.id;
+    clearTimeout(confirmRegionTimer);
+    confirmRegionTimer = setTimeout(() => { confirmRegion = null; buildRegions(); }, 3000);
+    buildRegions();
+    return;
+  }
+  confirmRegion = null;
+  clearTimeout(confirmRegionTimer);
+  save.cans -= r.price;
+  save.ownedRegions.push(r.id);
+  sfx.level();
+  pickRegion(r.id);
+}
+buildRegions();
+$('regionBtn').onclick = () => { buildRegions(); show('regionScreen'); };
+$('regionBack').onclick = () => { confirmRegion = null; show('startScreen'); };
 
 function startGame() {
   resetRun();
@@ -1388,7 +1428,7 @@ function frame() {
   requestAnimationFrame(frame);
 }
 
-applyRegion(save.region);
+applyRegion(ownsRegion(REGIONS.find(r => r.id === save.region) || REGIONS[0]) ? save.region : REGIONS[0].id);
 resetRun(true);
 setHero(save.hero);
 frame();
@@ -1435,7 +1475,7 @@ loadModels(() => {
   refreshLobby();
   show('startScreen');
 });
-window.__saifman = { state, update, startGame, MODELS, camera, hero, CHARACTERS, save, buildShop, buildHeroPicker, portraits, playClip, applyRegion, resetRun, get model() { return model; } };   // debug hook
+window.__saifman = { state, update, startGame, MODELS, camera, hero, CHARACTERS, REGIONS, buildRegions, save, buildShop, buildHeroPicker, portraits, playClip, applyRegion, resetRun, get model() { return model; } };   // debug hook
 })();
 </script>
 </body>
