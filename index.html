@@ -3,8 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>سيف مان</title>
-<link rel="icon" href="data:,">
+<title>عداء السعودية</title>
+<meta name="theme-color" content="#0b5a3a">
+<link rel="icon" type="image/png" href="art/favicon-64.png">
+<link rel="apple-touch-icon" href="art/apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&family=Lalezar&display=swap" rel="stylesheet">
 <style>
@@ -31,10 +34,10 @@
   /* Screens */
   .screen { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 16px; text-align: center; padding: 24px 16px; background: radial-gradient(ellipse at center, rgba(21,101,255,.35), rgba(0,0,0,.82) 70%); }
   .screen.show { display: flex; }
-  .logo { font-family: 'Lalezar', 'Cairo', sans-serif; font-size: clamp(64px, 16vw, 128px); line-height: 1.1;
-    background: linear-gradient(180deg, #fff 0%, #bcd4ff 45%, #1565ff 58%, #0a3cb8 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
-    filter: drop-shadow(0 5px 0 var(--deep)) drop-shadow(0 0 22px rgba(21,101,255,.8)); }
-  .latin { direction: ltr; font-family: 'Lalezar', sans-serif; letter-spacing: 3px; color: var(--gold); font-size: 20px; margin-top: -10px; text-shadow: 0 3px 0 var(--deep); }
+  .logo { font-family: 'Lalezar', 'Cairo', sans-serif; font-size: clamp(48px, 12vw, 104px); line-height: 1.1;
+    background: linear-gradient(180deg, #fff6c8 0%, #ffd75a 45%, #e0a21c 60%, #b8780c 100%); -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 5px 0 #06301f) drop-shadow(0 0 22px rgba(46,204,113,.75)); }
+  .latin { direction: ltr; font-family: 'Lalezar', sans-serif; letter-spacing: 3px; color: #7dffb0; font-size: 20px; margin-top: -10px; text-shadow: 0 3px 0 var(--deep); }
   .sub { font-family: 'Lalezar', sans-serif; font-size: clamp(30px, 7vw, 46px); color: var(--gold); text-shadow: 0 4px 0 var(--deep); }
   .btn { pointer-events: auto; cursor: pointer; font-family: 'Lalezar', sans-serif; font-size: 32px; color: var(--deep); background: linear-gradient(180deg, #ffe07a, var(--gold)); border: none; border-radius: 22px; padding: 10px 56px 14px; box-shadow: 0 6px 0 #b9831a, 0 10px 24px rgba(0,0,0,.45); transition: transform .08s; }
   .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #b9831a; }
@@ -78,7 +81,7 @@
   .newbest { color: var(--gold); font-weight: 900; font-size: 20px; display: none; animation: pulse .7s infinite alternate; }
   @keyframes pulse { to { transform: scale(1.12); } }
   @media (max-height: 640px) {          /* short screens: keep the hero visible between logo and buttons */
-    #startScreen .logo { font-size: 56px; }
+    #startScreen .logo { font-size: 46px; }
     #startScreen .hint { display: none; }
     .lobby-bottom { gap: 8px; }
     .pick { padding: 4px 10px; font-size: 17px; }
@@ -86,14 +89,14 @@
     #regionBtn img { width: 70px; height: 40px; }
     #startScreen .btn { font-size: 26px; padding: 6px 44px 10px; }
   }
-  #loading { position: fixed; inset: 0; display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; background: #071a4a; font-size: 18px; z-index: 5; }
-  #loading .logo { font-size: 72px; }
+  #loading { position: fixed; inset: 0; display: flex; flex-direction: column; gap: 10px; align-items: center; justify-content: center; background: radial-gradient(circle, #0b5a3a, #04201a); font-size: 18px; z-index: 5; }
+  #loading .logo { font-size: 56px; }
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
 
-<div id="loading"><div class="logo">سيف مان</div><div>جاري التحميل...</div></div>
+<div id="loading"><img src="art/icon-192.png" alt="" width="150" height="150" style="border-radius:34px;box-shadow:0 10px 40px rgba(0,0,0,.5)"><div class="logo">عداء السعودية</div><div>جاري التحميل...</div></div>
 
 <div id="hud">
   <div class="chip" id="pauseBtn" title="إيقاف مؤقت">❚❚</div>
@@ -104,8 +107,8 @@
 
 <div class="screen" id="startScreen">
   <div class="lobby-top">
-    <div class="logo">سيف مان</div>
-    <div class="latin">SAiFMaN</div>
+    <div class="logo">عداء السعودية</div>
+    <div class="latin">SAUDI RUNNER</div>
   </div>
   <div class="lobby-bottom">
     <div class="picker" id="heroPicker"></div>
