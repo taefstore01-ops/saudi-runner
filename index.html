@@ -78,6 +78,10 @@
   .stat .v { font-size: 30px; font-weight: 900; }
   .stat .l { font-size: 13px; opacity: .75; }
   .stat.best .v { color: var(--gold); }
+  #levelChip { position: fixed; top: 70px; right: 16px; display: none; font-size: 18px; padding: 4px 12px; pointer-events: none; }
+  #levelToast { position: fixed; top: 26%; left: 0; right: 0; text-align: center; pointer-events: none; font-family: 'Lalezar', sans-serif;
+    font-size: clamp(38px, 9vw, 64px); color: var(--gold); text-shadow: 0 4px 0 #06301f, 0 0 24px rgba(255,197,49,.7); opacity: 0; transform: scale(.6); transition: opacity .25s, transform .25s; }
+  #levelToast.on { opacity: 1; transform: scale(1); }
   .newbest { color: var(--gold); font-weight: 900; font-size: 20px; display: none; animation: pulse .7s infinite alternate; }
   @keyframes pulse { to { transform: scale(1.12); } }
   @media (max-height: 640px) {          /* short screens: keep the hero visible between logo and buttons */
@@ -102,7 +106,10 @@
   <div class="chip" id="pauseBtn" title="إيقاف مؤقت">❚❚</div>
   <div class="chip" id="regionBadge"></div>
   <div class="chip"><span id="cans">0</span><span class="can-ico"></span></div>
-  <div class="chip"><small>المسافة</small><span id="score">0</span></div>
+  <div class="chip"><small>النقاط</small><span id="score">0</span></div>
+</div>
+<div id="levelToast"></div>
+<div id="levelChip" class="chip"><small>السرعة</small><span id="level">1</span>
 </div>
 
 <div class="screen" id="startScreen">
@@ -141,7 +148,7 @@
   <div class="sub">اصطدمت!</div>
   <div class="newbest" id="newBest">رقم قياسي جديد!</div>
   <div class="stats">
-    <div class="stat"><div class="v" id="oScore">0</div><div class="l">المسافة</div></div>
+    <div class="stat"><div class="v" id="oScore">0</div><div class="l">النقاط</div></div>
     <div class="stat"><div class="v" id="oCans">0</div><div class="l">العلب</div></div>
     <div class="stat best"><div class="v" id="oBest">0</div><div class="l">أفضل نتيجة</div></div>
   </div>
@@ -160,7 +167,9 @@
 const LANES = [-2.4, 0, 2.4];
 const START_SPEED = 16;          // units / second
 const MAX_SPEED = 42;
-const SPEED_GAIN = 0.35;         // per second
+const CAN_POINTS = 10;           // points per can (distance gives 1 point per unit)
+const POINTS_PER_LEVEL = 250;    // every 250 points the run gets faster
+const LEVEL_SPEED = 2.5;         // speed added per level
 const GRAVITY = 42;
 const JUMP_V = 14.5;
 const SLIDE_TIME = 0.9;
@@ -987,6 +996,7 @@ const sfx = {
   jump: () => beep(320, 0.18, 'triangle', 0.08, 2.2),
   slide: () => beep(220, 0.2, 'sawtooth', 0.04, 0.5),
   lane: () => beep(500, 0.05, 'triangle', 0.03),
+  level: () => [660, 880, 1100].forEach((f, i) => setTimeout(() => beep(f, 0.12, 'triangle', 0.06), i * 90)),
   crash: () => { beep(140, 0.5, 'sawtooth', 0.12, 0.3); beep(90, 0.6, 'square', 0.08, 0.5); },
 };
 
@@ -998,6 +1008,7 @@ const state = {
   lane: 1, x: 0, y: 0, vy: 0, sliding: 0,
   deadT: 0, shake: 0,
   flip: -1,         // seconds into the somersault, -1 when not flipping
+  level: 1,
 };
 let pendingVictory = false;
 
@@ -1009,7 +1020,7 @@ function clearWorld() {
 }
 function resetRun(faceCamera = false) {
   clearWorld();
-  Object.assign(state, { speed: START_SPEED, distance: 0, cans: 0, lane: 1, x: 0, y: 0, vy: 0, sliding: 0, deadT: 0, shake: 0, flip: -1 });
+  Object.assign(state, { speed: START_SPEED, distance: 0, cans: 0, lane: 1, x: 0, y: 0, vy: 0, sliding: 0, deadT: 0, shake: 0, flip: -1, level: 1 });
   spin.rotation.x = 0;
   hero.position.set(0, 0, 0);
   hero.rotation.set(0, faceCamera ? 0 : Math.PI, 0);   // menu: show the hero's front
@@ -1060,11 +1071,22 @@ canvas.addEventListener('touchend', e => {
 
 // ---------- UI ----------
 const $ = id => document.getElementById(id);
-const ui = { hud: $('hud'), score: $('score'), cans: $('cans'), regionBadge: $('regionBadge') };
+const ui = { hud: $('hud'), score: $('score'), cans: $('cans'), regionBadge: $('regionBadge'), level: $('level'), levelChip: $('levelChip'), toast: $('levelToast') };
+const points = () => Math.floor(state.distance) + state.cans * CAN_POINTS;
+let toastTimer = 0;
+function levelUp(level) {
+  ui.level.textContent = level;
+  ui.toast.textContent = `أسرع! المستوى ${level}`;
+  ui.toast.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => ui.toast.classList.remove('on'), 1300);
+  sfx.level();
+}
 const SCREENS = ['startScreen', 'regionScreen', 'pauseScreen', 'overScreen'];
 function show(id) {
   SCREENS.forEach(s => $(s).classList.toggle('show', s === id));
   ui.hud.style.display = (state.mode === 'play' || state.mode === 'paused') ? 'flex' : 'none';
+  ui.levelChip.style.display = ui.hud.style.display;
 }
 function refreshLobby() {
   $('bestLine').textContent = save.best ? `أفضل نتيجة: ${save.best} · مجموع العلب: ${save.cans}` : '';
@@ -1112,6 +1134,8 @@ function startGame() {
   resetRun();
   ui.cans.textContent = '0';
   ui.score.textContent = '0';
+  ui.level.textContent = '1';
+  ui.toast.classList.remove('on');
   state.mode = 'play';
   if (model) model.once = null;
   show(null);
@@ -1133,7 +1157,7 @@ function gameOver() {
   state.deadT = 0;
   state.shake = 0.5;
   sfx.crash();
-  const score = Math.floor(state.distance);
+  const score = points();
   const isBest = score > save.best;
   if (isBest) { save.best = score; pendingVictory = true; }
   save.cans += state.cans;
@@ -1165,9 +1189,14 @@ function update(dt) {
   const v = playing ? s.speed : 0;
 
   if (playing) {
-    s.speed = Math.min(MAX_SPEED, s.speed + SPEED_GAIN * dt);
+    // speed comes from points earned: each level adds LEVEL_SPEED, eased in so it doesn't jerk
+    const pts = points();
+    const level = 1 + Math.floor(pts / POINTS_PER_LEVEL);
+    if (level > s.level) { s.level = level; levelUp(level); }
+    const target = Math.min(MAX_SPEED, START_SPEED + (s.level - 1) * LEVEL_SPEED);
+    s.speed += (target - s.speed) * Math.min(1, dt * 1.5);
     s.distance += v * dt;
-    ui.score.textContent = Math.floor(s.distance);
+    ui.score.textContent = points();
     // scroll road + world toward the camera
     roadTex.offset.y += (v * dt) / (ROAD_LEN / 14);
     walkTex.offset.y += (v * dt) / (ROAD_LEN / 40);
@@ -1210,7 +1239,7 @@ function update(dt) {
       o.mesh.rotation.y += dt * 4;
       if (playing && !o.taken && Math.abs(o.z) < 0.8 && Math.abs(o.mesh.position.x - s.x) < 0.9 &&
           o.y > s.y - 0.2 && o.y < s.y + heroTop + 0.3) {
-        o.taken = true; s.cans++; ui.cans.textContent = s.cans;
+        o.taken = true; s.cans++; ui.cans.textContent = s.cans; ui.score.textContent = points();
         burst(o.mesh.position); sfx.can();
         scene.remove(o.mesh); world.splice(i, 1);
         continue;
