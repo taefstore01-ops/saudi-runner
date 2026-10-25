@@ -225,6 +225,14 @@ const REGIONS = [
     sun: [0xffb27a, 0.75], hemi: [0xffd2b0, 0x5a3424, 0.7], trees: 'none', lamps: 'lantern' },
   { id: 'jazan', price: 0, name: 'جازان', tag: 'سلة فواكه المملكة', left: 'jazan', right: 'jazan', ground: 0x5f9a3f, walk: 0xcdbf9c,
     sun: [0xfff1d0, 1.15], hemi: [0xe6fff0, 0x3f5a2c, 0.85], trees: 'mango', lamps: 'none' },
+  { id: 'madinah', price: 500, name: 'المدينة المنورة', tag: 'فجر النور', left: 'madinah', right: 'madinah', ground: 0xd9c7a8, walk: 0xf1e8da,
+    sun: [0xffd0a8, 1.1], hemi: [0xffe6f0, 0x7a6a5a, 0.8], trees: 'datepalm', lamps: 'classic' },
+  { id: 'abha', price: 600, name: 'أبها', tag: 'مدينة الضباب', left: 'asiri', right: 'asiri', ground: 0x4f8a45, walk: 0xc9c4b8,
+    sun: [0xeef4ff, 0.8], hemi: [0xe0f0ff, 0x3f5a3a, 0.95], trees: 'juniper', lamps: 'classic', fog: [14, 105] },
+  { id: 'tabuk', price: 700, name: 'تبوك', tag: 'ثلج الصحراء', left: 'castle', right: 'snowrock', ground: 0xeef2f7, walk: 0xe2e9f2,
+    sun: [0xfff0e0, 1.1], hemi: [0xeaf2ff, 0x9a8a8a, 0.85], trees: 'blossom', lamps: 'classic', snow: true },
+  { id: 'neom', price: 1000, name: 'نيوم', tag: 'مدينة المستقبل', left: 'neon', right: 'neon', ground: 0x1a1f3a, walk: 0x2c3358,
+    sun: [0x9fb4ff, 0.55], hemi: [0x8a9cff, 0x241a40, 0.85], trees: 'neonpalm', lamps: 'neon', neon: true },
 ];
 const ART = window.SAIFMAN_REGIONS || {};
 
@@ -353,6 +361,52 @@ const FACADES = {
       g.strokeStyle = '#b89a6a'; g.lineWidth = 4; g.stroke();
     }
   })),
+  madinah: () => ['#f6f1e7', '#ede5d6', '#faf6ee'].map(base => canvasTex(128, 256, (g, w, h) => {
+    g.fillStyle = base; g.fillRect(0, 0, w, h);
+    noise(g, w, h, 200, 0.04);
+    g.fillStyle = '#2f7d5a'; g.fillRect(0, 126, w, 5);            // green trim
+    g.fillStyle = '#6b4226'; g.fillRect(30, 26, 68, 84);          // carved wooden mashrabiya
+    g.strokeStyle = 'rgba(255,225,170,.5)'; g.lineWidth = 1;
+    for (let x = 34; x < 98; x += 5) { g.beginPath(); g.moveTo(x, 30); g.lineTo(x, 106); g.stroke(); }
+    for (let y = 30; y < 106; y += 5) { g.beginPath(); g.moveTo(34, y); g.lineTo(94, y); g.stroke(); }
+    g.fillStyle = Math.random() < 0.5 ? '#ffd88a' : '#4a3a2a';    // ground-floor arch
+    g.beginPath(); g.moveTo(30, h); g.lineTo(30, 190); g.arc(64, 190, 34, Math.PI, 0); g.lineTo(98, h); g.fill();
+    g.strokeStyle = '#c9b48a'; g.lineWidth = 5; g.stroke();
+  })),
+  asiri: () => [0, 1, 2].map(() => canvasTex(128, 256, (g, w, h) => {
+    g.fillStyle = '#8f8070'; g.fillRect(0, 0, w, h);               // stone courses
+    for (let y = 0; y < h; y += 14) for (let x = (y / 14) % 2 * 12; x < w; x += 24) {
+      g.fillStyle = `rgba(${pick(['70,60,50', '120,108,94', '95,85,72'])},.55)`; g.fillRect(x, y, 22, 12);
+    }
+    const cols = ['#e3342f', '#ffcc29', '#2bb34b', '#2a6fdb', '#ffffff', '#ff8a1f'];
+    for (const by of [6, 132]) {                                   // Al-Qatt Al-Asiri triangle bands
+      for (let row = 0; row < 3; row++) {
+        g.fillStyle = cols[(row + by) % cols.length];
+        for (let x = 0; x < w; x += 16) { g.beginPath(); g.moveTo(x, by + row * 12 + 12); g.lineTo(x + 8, by + row * 12); g.lineTo(x + 16, by + row * 12 + 12); g.fill(); }
+      }
+    }
+    for (const y of [56, 182]) {                                   // white-framed windows, coloured shutters
+      g.fillStyle = '#ffffff'; g.fillRect(38, y - 6, 52, 58);
+      g.fillStyle = pick(['#2a6fdb', '#e3342f', '#2bb34b']); g.fillRect(44, y, 40, 46);
+      g.fillStyle = 'rgba(255,255,255,.7)'; g.fillRect(62, y, 4, 46);
+    }
+  })),
+  castle: () => ['#b9a68a', '#a8957a'].map(base => canvasTex(128, 256, (g, w, h) => {
+    g.fillStyle = base; g.fillRect(0, 0, w, h);
+    g.strokeStyle = 'rgba(60,45,30,.35)'; g.lineWidth = 2;
+    for (let y = 0; y < h; y += 18) {
+      g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke();
+      for (let x = (y / 18) % 2 * 16; x < w; x += 32) { g.beginPath(); g.moveTo(x, y); g.lineTo(x, y + 18); g.stroke(); }
+    }
+    noise(g, w, h, 300, 0.08);
+  })),
+  neon: () => ['#f1f5fa', '#e6edf6'].map(base => canvasTex(128, 256, (g, w, h) => {
+    g.fillStyle = base; g.fillRect(0, 0, w, h);
+    for (let y = 20; y < h; y += 64) {                             // dark glass bands with lit rooms
+      g.fillStyle = '#16244a'; g.fillRect(0, y, w, 30);
+      for (let x = 4; x < w; x += 20) if (Math.random() < 0.45) { g.fillStyle = pick(['#7ff6ff', '#ffd6ff', '#fff3c4']); g.fillRect(x, y + 6, 14, 18); }
+    }
+  })),
 };
 const facadeCache = {};
 function facadeMats(style) {
@@ -394,6 +448,26 @@ backdrop.renderOrder = -1;
 scene.add(backdrop);
 const regionStatic = new THREE.Group();   // things that don't scroll (sea, rails)
 scene.add(regionStatic);
+
+// falling snow around the camera (Tabuk)
+const SNOW_N = 1400;
+const snowGeo = new THREE.BufferGeometry();
+snowGeo.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(SNOW_N * 3).map((_, i) =>
+  i % 3 === 0 ? rnd(-30, 30) : i % 3 === 1 ? rnd(0, 22) : rnd(-60, 12)), 3));
+const snow = new THREE.Points(snowGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.18, transparent: true, opacity: 0.9, depthWrite: false }));
+snow.visible = false;
+scene.add(snow);
+function updateSnow(dt, v) {
+  const a = snowGeo.attributes.position.array;
+  for (let i = 0; i < a.length; i += 3) {
+    a[i + 1] -= dt * 2.2;
+    a[i] += Math.sin((a[i + 1] + i) * 0.5) * dt * 0.4;
+    a[i + 2] += v * dt;
+    if (a[i + 1] < 0) a[i + 1] += 22;
+    if (a[i + 2] > 12) a[i + 2] -= 72;
+  }
+  snowGeo.attributes.position.needsUpdate = true;
+}
 
 // ---------- Hero ----------
 const hero = new THREE.Group();
@@ -637,6 +711,16 @@ const M = {
   roshan: new THREE.MeshLambertMaterial({ color: 0x5b3a22 }),
   hull: new THREE.MeshLambertMaterial({ color: 0x8a5a32 }),
   sail: new THREE.MeshLambertMaterial({ color: 0xf4efe2, side: THREE.DoubleSide }),
+  dome: new THREE.MeshLambertMaterial({ color: 0x1f8a5a }),
+  dates: new THREE.MeshLambertMaterial({ color: 0xd9822b }),
+  juniper: new THREE.MeshLambertMaterial({ color: 0x2c6b3c, flatShading: true }),
+  blossom: new THREE.MeshLambertMaterial({ color: 0xf7b6cf, flatShading: true }),
+  snow: new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true }),
+  redrock: [0xc8552e, 0xd86a3a, 0xb84a28].map(c => new THREE.MeshLambertMaterial({ color: c, flatShading: true })),
+  white: new THREE.MeshLambertMaterial({ color: 0xf3f6fa }),
+  glass: new THREE.MeshLambertMaterial({ color: 0x1b2d5c }),
+  cyan: new THREE.MeshBasicMaterial({ color: 0x35f2ff }),
+  pink: new THREE.MeshBasicMaterial({ color: 0xff4fd8 }),
 };
 const G = {
   trunk: new THREE.CylinderGeometry(0.12, 0.2, 4.2, 7),
@@ -644,9 +728,11 @@ const G = {
   canopy: new THREE.IcosahedronGeometry(1.4, 1),
   fruit: new THREE.SphereGeometry(0.16, 6, 5),
   rock: new THREE.DodecahedronGeometry(1, 0),
+  dome: new THREE.SphereGeometry(1, 18, 9, 0, Math.PI * 2, 0, Math.PI / 2),
+  cone: new THREE.ConeGeometry(1, 2.6, 8),
 };
 
-function palm(x, z) {
+function palm(x, z, extra) {
   const g = new THREE.Group();
   const t = new THREE.Mesh(G.trunk, M.trunk);
   t.position.y = 2.1; t.rotation.z = rnd(-0.08, 0.08);
@@ -658,6 +744,19 @@ function palm(x, z) {
     f.rotation.set(0.5, (i / 7) * Math.PI * 2, 0, 'YXZ');
     f.translateZ(1.1);
     g.add(f);
+  }
+  if (extra === 'dates') {                       // Madinah: hanging date clusters
+    for (let i = 0; i < 4; i++) {
+      const c = new THREE.Mesh(G.fruit, M.dates);
+      const a = (i / 4) * Math.PI * 2 + 0.4;
+      c.scale.set(1.6, 2.4, 1.6);
+      c.position.set(Math.cos(a) * 0.35, 3.75, Math.sin(a) * 0.35);
+      g.add(c);
+    }
+  } else if (extra === 'neon') {                 // NEOM: glowing ring at the foot
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.45, 0.05, 6, 20), M.cyan);
+    ring.rotation.x = Math.PI / 2; ring.position.y = 0.05;
+    g.add(ring);
   }
   g.position.set(x, 0.3, z);
   g.traverse(o => { if (o.isMesh) o.castShadow = true; });
@@ -680,9 +779,42 @@ function mangoTree(x, z) {
   g.traverse(o => { if (o.isMesh) o.castShadow = true; });
   addDeco(g);
 }
+function juniper(x, z) {
+  const g = new THREE.Group();
+  const s = rnd(0.8, 1.2);
+  for (let i = 0; i < 3; i++) {
+    const c = new THREE.Mesh(G.cone, M.juniper);
+    c.scale.setScalar(s * (1.1 - i * 0.28));
+    c.position.y = s * (1.3 + i * 1.1);
+    g.add(c);
+  }
+  g.position.set(x, 0.3, z);
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  addDeco(g);
+}
+function blossomTree(x, z) {
+  const g = new THREE.Group();
+  const t = new THREE.Mesh(G.trunk, M.trunk);
+  t.scale.set(1, 0.55, 1); t.position.y = 1.15;
+  const c = new THREE.Mesh(G.canopy, M.blossom);
+  c.position.y = 3; c.scale.set(1, 0.8, 1);
+  const cap = new THREE.Mesh(G.canopy, M.snow);  // snow resting on top
+  cap.position.y = 3.55; cap.scale.set(0.75, 0.3, 0.75);
+  g.add(t, c, cap);
+  g.position.set(x, 0.3, z);
+  g.traverse(o => { if (o.isMesh) o.castShadow = true; });
+  addDeco(g);
+}
 function lamp(side, z) {
   const g = new THREE.Group();
-  if (region.lamps === 'lantern') {              // AlUla: low glowing lanterns
+  if (region.lamps === 'neon') {                 // NEOM: slim white post with a light bar
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 4, 8), M.white);
+    post.position.y = 2;
+    const bar = new THREE.Mesh(new THREE.BoxGeometry(0.12, 2.2, 0.12), pick([M.cyan, M.pink]));
+    bar.position.y = 2.6;
+    g.add(post, bar);
+    g.position.set(side * 4.3, 0.3, z);
+  } else if (region.lamps === 'lantern') {              // AlUla: low glowing lanterns
     const post = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.7, 0.25), M.sandstone);
     post.position.y = 0.35;
     const glow = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.32, 0.3), M.lantern);
@@ -797,6 +929,110 @@ const SIDE = {
     if (Math.random() < 0.7) mangoTree(side * rnd(14, 18), z - rnd(0, 4));
     return r * 2 + rnd(3, 7);
   },
+  madinah(side, z) {                             // white arcades, mashrabiya, green domes
+    const w = rnd(5, 8), d = rnd(6, 10), h = rnd(6, 12);
+    const m = new THREE.Mesh(uvTile(new THREE.BoxGeometry(w, h, d), Math.round(Math.max(w, d) / 3), Math.max(1, Math.round(h / 6))), pick(facadeMats('madinah')));
+    m.position.set(side * (8.3 + w / 2), h / 2, z - d / 2);
+    const bal = new THREE.Mesh(new THREE.BoxGeometry(0.5, 2.2, d * 0.4), M.roshan);
+    bal.position.set(-side * (w / 2 + 0.25), h / 2 - 2.2, 0);
+    m.add(bal);
+    if (Math.random() < 0.45) {
+      const r = Math.min(w, d) * 0.28;
+      const dome = new THREE.Mesh(G.dome, M.dome);
+      dome.scale.setScalar(r);
+      dome.position.y = h / 2;
+      m.add(dome);
+    }
+    m.castShadow = m.receiveShadow = true;
+    addDeco(m, d);
+    return d + rnd(0.3, 1.5);
+  },
+  asiri(side, z) {                               // Asir tower houses painted with Al-Qatt patterns
+    const w = rnd(4.5, 6.5), d = rnd(4.5, 7), h = rnd(7, 13);
+    const mat = pick(facadeMats('asiri'));
+    const g = new THREE.Group();
+    const low = new THREE.Mesh(uvTile(new THREE.BoxGeometry(w, h * 0.55, d), Math.round(Math.max(w, d) / 3), Math.max(1, Math.round(h * 0.55 / 6))), mat);
+    low.position.y = h * 0.275;
+    const top = new THREE.Mesh(uvTile(new THREE.BoxGeometry(w * 0.82, h * 0.45, d * 0.82), Math.round(Math.max(w, d) / 3), 1), mat);
+    top.position.y = h * 0.775;
+    const rim = new THREE.Mesh(new THREE.BoxGeometry(w * 0.86, 0.35, d * 0.86), M.white);   // white parapet
+    rim.position.y = h + 0.17;
+    g.add(low, top, rim);
+    g.position.set(side * (8.3 + w / 2), 0, z - d / 2);
+    g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    addDeco(g, d);
+    return d + rnd(0.6, 2.5);
+  },
+  castle(side, z) {                              // Tabuk castle walls and towers under snow
+    const g = new THREE.Group();
+    const d = rnd(10, 16), h = rnd(4.5, 6.5), w = 3;
+    const mat = pick(facadeMats('castle'));
+    const wall = new THREE.Mesh(uvTile(new THREE.BoxGeometry(w, h, d), Math.round(d / 3), 1), mat);
+    wall.position.y = h / 2;
+    const snowTop = new THREE.Mesh(new THREE.BoxGeometry(w + 0.2, 0.25, d + 0.2), M.snow);
+    snowTop.position.y = h + 0.12;
+    g.add(wall, snowTop);
+    for (const tz of [-d / 2, d / 2]) {
+      const tower = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.7, h + 2.5, 12), mat);
+      tower.position.set(0, (h + 2.5) / 2, tz);
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.6, 0.35, 12), M.snow);
+      cap.position.set(0, h + 2.6, tz);
+      g.add(tower, cap);
+    }
+    if (Math.random() < 0.5) {
+      const gate = new THREE.Mesh(new THREE.BoxGeometry(0.2, 3, 2), M.door);
+      gate.position.set(-side * (w / 2), 1.5, 0);
+      g.add(gate);
+    }
+    g.position.set(side * (9 + w / 2), 0, z - d / 2);
+    g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    addDeco(g, d);
+    if (Math.random() < 0.6) blossomTree(side * 7.4, z - rnd(2, d));
+    return d + rnd(2, 6);
+  },
+  snowrock(side, z) {                            // Hisma red sandstone spires with snow caps
+    const g = new THREE.Group();
+    const d = rnd(8, 14);
+    for (let i = 0; i < 3; i++) {
+      const r = new THREE.Mesh(G.rock, pick(M.redrock));
+      const sc = rnd(2.2, 4.2);
+      r.scale.set(sc * rnd(0.6, 0.9), sc * rnd(1.6, 2.8), sc * rnd(0.7, 1));
+      r.position.set(rnd(-1.5, 2.5), r.scale.y * 0.8, rnd(-d / 2, d / 2));
+      r.rotation.y = Math.random() * 3;
+      const cap = new THREE.Mesh(G.rock, M.snow);
+      cap.scale.set(1.02, 0.22, 1.02);
+      cap.position.y = 0.82;
+      r.add(cap);
+      g.add(r);
+    }
+    const drift = new THREE.Mesh(G.rock, M.snow);  // snow drift at the foot
+    drift.scale.set(3, 0.5, d * 0.45);
+    drift.position.y = 0.1;
+    g.add(drift);
+    g.position.set(side * rnd(11, 15), 0, z - d / 2);
+    g.traverse(o => { if (o.isMesh) { o.castShadow = true; o.receiveShadow = true; } });
+    addDeco(g, d);
+    return d + rnd(1, 5);
+  },
+  neon(side, z) {                                // NEOM: white organic towers with neon rings
+    const g = new THREE.Group();
+    const r = rnd(2.2, 3.6), h = rnd(10, 32);
+    const body = new THREE.Mesh(uvTile(new THREE.CylinderGeometry(r * 0.85, r, h, 28), 3, Math.round(h / 6)), pick(facadeMats('neon')));
+    body.scale.z = rnd(1.2, 1.8);
+    body.position.y = h / 2;
+    g.add(body);
+    for (let i = 0; i < 2; i++) {
+      const ring = new THREE.Mesh(new THREE.TorusGeometry(r * 0.95, 0.08, 6, 40), pick([M.cyan, M.pink]));
+      ring.rotation.x = Math.PI / 2;
+      ring.scale.y = body.scale.z;
+      ring.position.y = h * (0.35 + i * 0.6);
+      g.add(ring);
+    }
+    g.position.set(side * (10.5 + r + rnd(0, 3)), 0, z - r);
+    g.traverse(o => { if (o.isMesh && o.material !== M.cyan && o.material !== M.pink) { o.castShadow = true; o.receiveShadow = true; } });
+    addDeco(g, r * 2);
+    return r * 2 * body.scale.z + rnd(2, 7);
+  },
   sea(side, z) {                                 // Dammam corniche: dhows on the water
     if (Math.random() < 0.5) {
       const g = new THREE.Group();
@@ -836,6 +1072,14 @@ function fillStreetProps() {
       palm(7.1, nextTreeZ - 6);
     } else if (region.trees === 'mango') {
       mangoTree(-7.4, nextTreeZ); mangoTree(7.4, nextTreeZ - 7);
+    } else if (region.trees === 'datepalm') {
+      palm(-7.1, nextTreeZ, 'dates'); palm(7.1, nextTreeZ - 6, 'dates');
+    } else if (region.trees === 'juniper') {
+      juniper(-7.2, nextTreeZ); juniper(7.2, nextTreeZ - 5);
+    } else if (region.trees === 'blossom') {
+      if (region.right !== 'castle') blossomTree(7.4, nextTreeZ - 6);
+    } else if (region.trees === 'neonpalm') {
+      palm(-7.1, nextTreeZ, 'neon'); palm(7.1, nextTreeZ - 6, 'neon');
     }
     nextTreeZ -= 13;
   }
@@ -856,23 +1100,28 @@ function applyRegion(id) {
   const horizon = new THREE.Color(art.horizon || '#cfe3ff');
   scene.background = top;
   scene.fog.color.copy(horizon);
+  scene.fog.near = region.fog ? region.fog[0] : 45;   // Abha: thick mountain fog
+  scene.fog.far = region.fog ? region.fog[1] : 170;
+  snow.visible = !!region.snow;
   hemi.color.setHex(region.hemi[0]); hemi.groundColor.setHex(region.hemi[1]); hemi.intensity = region.hemi[2];
   sun.color.setHex(region.sun[0]); sun.intensity = region.sun[1];
   ground.material.color.setHex(region.ground);
   walkMat.color.setHex(region.walk);
 
   if (art.sky) {
-    if (!backdropTex[region.id]) {
-      const t = new THREE.TextureLoader().load(art.sky);
+    const rid = region.id;
+    if (!backdropTex[rid]) {
+      // hidden until decoded: an unloaded texture renders the skyline black
+      const t = new THREE.TextureLoader().load(art.sky, () => { t.ready = true; if (region.id === rid) backdrop.visible = true; });
       t.encoding = THREE.sRGBEncoding;
-      backdropTex[region.id] = t;
+      backdropTex[rid] = t;
     }
-    backdrop.material.map = backdropTex[region.id];
+    backdrop.material.map = backdropTex[rid];
     backdrop.material.needsUpdate = true;
     const width = 620, height = width / (art.aspect || 2);
     backdrop.scale.set(width, height, 1);
     backdrop.position.set(0, height / 2 - 3, -215);
-    backdrop.visible = true;
+    backdrop.visible = !!backdropTex[rid].ready;
   } else backdrop.visible = false;
 
   regionStatic.clear();
@@ -886,6 +1135,18 @@ function applyRegion(id) {
     const wall = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.9, ROAD_LEN), new THREE.MeshLambertMaterial({ color: 0xe8e4dc }));
     wall.position.set(side * 7.75, 0.45, road.position.z);
     regionStatic.add(sea, rail, wall);
+  }
+  if (region.neon) {                             // NEOM: neon road edges and glowing water channels
+    for (const side of [-1, 1]) {
+      const edge = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, ROAD_LEN), M.cyan);
+      edge.position.set(side * 3.7, 0.04, road.position.z);
+      const kerb = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.06, ROAD_LEN), M.pink);
+      kerb.position.set(side * 7.75, 0.33, road.position.z);
+      const water = new THREE.Mesh(new THREE.PlaneGeometry(2, ROAD_LEN), new THREE.MeshBasicMaterial({ color: 0x1fc8e8, transparent: true, opacity: 0.85 }));
+      water.rotation.x = -Math.PI / 2;
+      water.position.set(side * 8.9, 0.06, road.position.z);
+      regionStatic.add(edge, kerb, water);
+    }
   }
   ui.regionBadge.textContent = region.name;
   refreshLobby();
@@ -1337,6 +1598,7 @@ function update(dt) {
     while (nextSpawnZ > SPAWN_Z) spawnPattern();
   }
   seaTex.offset.x += dt * 0.02;
+  if (snow.visible) updateSnow(dt, v);
 
   // hero physics
   if (playing) {
