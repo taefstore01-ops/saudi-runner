@@ -14,10 +14,19 @@
       "tools/**",
       "models/*.glb",
       "README.md",
-      "PROMPTS.md"
+      "PROMPTS.md",
+      "store/**"
     ],
     "headers": [
-      { "source": "**/*.@(js|png|jpg)", "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600" }] }
+      {
+        "source": "**/*.@(js|png|jpg)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=3600"
+          }
+        ]
+      }
     ]
   }
 }

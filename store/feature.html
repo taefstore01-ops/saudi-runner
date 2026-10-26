@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>Feature graphic</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@700;900&family=Lalezar&display=swap" rel="stylesheet">
+<style>
+  /* Google Play feature graphic, 1024 x 500. Rendered by headless Chrome into feature-graphic.png */
+  html, body { margin: 0; width: 1024px; height: 500px; overflow: hidden; background: #062b1f; }
+  .bg { position: absolute; inset: 0; background: url('2-tabuk.png') 85% 60% / 150% auto no-repeat; filter: saturate(1.15); }
+  .bg2 { position: absolute; inset: 0 0 0 52%; background: url('3-neom.png') center 55% / cover; mask-image: linear-gradient(90deg, transparent, #000 35%); -webkit-mask-image: linear-gradient(90deg, transparent, #000 35%); }
+  .shade { position: absolute; inset: 0; background: linear-gradient(270deg, rgba(4,32,22,.92) 0%, rgba(4,32,22,.75) 42%, rgba(4,32,22,0) 70%); }
+  .text { position: absolute; top: 0; bottom: 0; right: 56px; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 6px; }
+  .icon { width: 128px; height: 128px; border-radius: 30px; box-shadow: 0 10px 30px rgba(0,0,0,.5); }
+  .title { font-family: 'Lalezar', sans-serif; font-size: 92px; line-height: 1.05;
+    background: linear-gradient(180deg, #fff6c8, #ffd75a 45%, #e0a21c 60%, #b8780c); -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 5px 0 #06301f) drop-shadow(0 0 22px rgba(46,204,113,.6)); }
+  .latin { font-family: 'Lalezar', sans-serif; direction: ltr; letter-spacing: 6px; color: #7dffb0; font-size: 26px; }
+  .tag { font-family: 'Cairo', sans-serif; font-weight: 900; color: #fff; font-size: 26px; text-shadow: 0 3px 8px rgba(0,0,0,.6); }
+</style>
+</head>
+<body>
+  <div class="bg"></div>
+  <div class="bg2"></div>
+  <div class="shade"></div>
+  <div class="text">
+    <img class="icon" src="../art/icon-192.png" alt="">
+    <div class="title">عدّاء السعودية</div>
+    <div class="latin">SAUDI RUNNER</div>
+    <div class="tag">اجرِ في مدن المملكة واجمع علب الطاقة!</div>
+  </div>
+</body>
+</html>

@@ -1879,7 +1879,30 @@ loadModels(() => {
   state.mode = 'menu';
   refreshLobby();
   show('startScreen');
+  storeShot();
 });
+
+// Store screenshots: ?shot=<region>&hero=<id>[&run=seconds] freezes a moment of a run
+// (without &run it shows the lobby). Used for the Google Play listing, never by players.
+function storeShot() {
+  const q = new URLSearchParams(location.search);
+  if (!q.has('shot')) return;
+  if (q.get('hero') && MODELS[q.get('hero')]) setHero(q.get('hero'));
+  applyRegion(q.get('shot'));
+  resetRun(true);
+  refreshLobby();
+  if (q.get('screen') === 'regions') { buildRegions(); show('regionScreen'); }
+  if (q.get('screen') === 'shop') { buildShop(); show('shopScreen'); }
+  if (!q.has('run')) return;
+  startGame();
+  const frames = Math.round(parseFloat(q.get('run') || '2') * 60);
+  for (let i = 0; i < frames; i++) { update(1 / 60); if (state.mode !== 'play') state.mode = 'play'; }
+  if (q.has('jump')) { jump(); for (let i = 0; i < 14; i++) update(1 / 60); }
+  state.cans = Math.max(state.cans, parseInt(q.get('cans') || '0', 10));
+  ui.cans.textContent = state.cans;
+  ui.score.textContent = points();
+  state.mode = 'paused';
+}
 // installable / offline (only over https, the file:// double-click version skips it)
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 window.__saifman = { state, update, startGame, MODELS, camera, hero, CHARACTERS, REGIONS, buildRegions, save, buildShop, buildHeroPicker, portraits, playClip, applyRegion, resetRun, get model() { return model; } };   // debug hook
