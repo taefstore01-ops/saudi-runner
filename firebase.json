@@ -9,13 +9,15 @@
       "firebase.json",
       "firestore.rules",
       "firestore.indexes.json",
-      "**/.*",
       "**/node_modules/**",
       "tools/**",
       "models/*.glb",
       "README.md",
       "PROMPTS.md",
-      "store/**"
+      "store/**",
+      ".git/**",
+      ".gitignore",
+      ".firebase/**"
     ],
     "headers": [
       {

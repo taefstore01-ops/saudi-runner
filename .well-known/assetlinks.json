@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.abusaif.saudirunner",
+      "sha256_cert_fingerprints": [
+        "7C:B5:AE:16:C0:CF:7A:7C:23:94:79:DF:73:2C:A0:AD:9A:29:71:96:B1:00:AA:0F:F4:93:B4:D4:4A:C0:B4:D2",
+        "CF:99:16:42:1A:CD:58:FA:A2:1E:89:40:9F:5F:B0:FF:A0:65:29:C0:35:5A:39:5A:50:E4:85:B8:DC:DF:43:E8"
+      ]
+    }
+  }
+]
