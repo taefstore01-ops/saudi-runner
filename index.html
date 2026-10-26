@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>عداء السعودية</title>
+<title>عدّاء السعودية</title>
 <meta name="theme-color" content="#0b5a3a">
 <link rel="icon" type="image/png" href="art/favicon-64.png">
 <link rel="apple-touch-icon" href="art/apple-touch-icon.png">
@@ -108,6 +108,10 @@
   .nameBox.show { display: flex; }
   .nameBox .t { font-weight: 900; }
   .nameRow { display: flex; gap: 8px; width: 100%; }
+  .nameShow { flex: 1; min-width: 0; font-size: 19px; font-weight: 900; border-radius: 12px; background: rgba(0,0,0,.35); border: 2px solid rgba(255,255,255,.25); padding: 6px 12px; text-align: center; color: var(--gold); }
+  .nameRow .shuffle { background: rgba(255,255,255,.18); color: #fff; font-size: 18px; }
+  .linkBtn { background: none; border: none; color: rgba(255,255,255,.65); text-decoration: underline; font-family: inherit; font-size: 14px; cursor: pointer; }
+  .linkBtn.confirm { color: #ff9aa5; font-weight: 900; }
   .nameRow input { flex: 1; min-width: 0; font-family: inherit; font-size: 18px; font-weight: 700; border-radius: 12px; border: 2px solid rgba(255,255,255,.3); background: rgba(0,0,0,.35); color: #fff; padding: 6px 12px; text-align: right; }
   .nameRow button { border: none; border-radius: 12px; padding: 6px 16px; font-weight: 900; font-size: 16px; background: #2ecc71; color: #06301f; cursor: pointer; }
   .nameErr { color: #ff9aa5; font-size: 13px; min-height: 18px; }
@@ -194,13 +198,15 @@
   <div class="sub">🏆 التصنيف العالمي</div>
   <div class="tabs"><button class="tab on" data-kind="week">هذا الأسبوع</button><button class="tab" data-kind="all">كل الأوقات</button></div>
   <div class="nameBox" id="boardName">
-    <div class="t">اكتب اسمك ليظهر في التصنيف</div>
-    <div class="nameRow"><input id="boardNameIn" maxlength="14" placeholder="اسمك"><button id="boardNameOk">حفظ</button></div>
-    <div class="nameErr" id="boardNameErr"></div>
+    <div class="t">اختر اسمك في التصنيف</div>
+    <div class="nameRow"><div class="nameShow" id="boardNameShow"></div><button class="shuffle" id="boardNameNew" title="اسم آخر">🔀</button><button id="boardNameOk">اعتمد</button></div>
+    <div class="nameErr">اضغط 🔀 لتغيير الاسم</div>
   </div>
   <div class="hint" id="boardMsg"></div>
   <div class="board" id="boardList"></div>
   <button class="btn ghost" id="boardBack">رجوع</button>
+  <button class="linkBtn" id="boardDelete">حذف بياناتي من التصنيف</button>
+  <a class="linkBtn" href="privacy.html" target="_blank" rel="noopener">سياسة الخصوصية</a>
 </div>
 
 <div class="screen" id="pauseScreen">
@@ -219,9 +225,9 @@
   </div>
   <div id="oRank"></div>
   <div class="nameBox" id="overName">
-    <div class="t">🏆 سجّل اسمك في التصنيف العالمي</div>
-    <div class="nameRow"><input id="overNameIn" maxlength="14" placeholder="اسمك"><button id="overNameOk">حفظ</button></div>
-    <div class="nameErr" id="overNameErr"></div>
+    <div class="t">🏆 اختر اسمك في التصنيف العالمي</div>
+    <div class="nameRow"><div class="nameShow" id="overNameShow"></div><button class="shuffle" id="overNameNew" title="اسم آخر">🔀</button><button id="overNameOk">اعتمد</button></div>
+    <div class="nameErr">اضغط 🔀 لتغيير الاسم</div>
   </div>
   <button class="btn" id="retryBtn">مرة ثانية</button>
   <button class="btn ghost" id="menuBtn">القائمة</button>
@@ -1554,18 +1560,18 @@ async function sendScore(score) {
     return await BOARD.mine('week');
   } catch (e) { console.warn('leaderboard submit:', e); return null; }
 }
+// name picker: a random kid-safe name, 🔀 for another, "اعتمد" to keep it
 function nameForm(prefix, after) {
-  const input = $(prefix + 'NameIn'), err = $(prefix + 'NameErr');
+  const showName = $(prefix + 'NameShow');
+  const roll = () => { showName.textContent = BOARD.randomName(); };
+  $(prefix + 'NameNew').onclick = roll;
   $(prefix + 'NameOk').onclick = async () => {
-    const r = BOARD.checkName(input.value);
-    if (r.error) { err.textContent = r.error; return; }
-    err.textContent = '';
-    save.name = r.name;
+    save.name = showName.textContent;
     writeSave();
     $(prefix + 'Name').classList.remove('show');
     await after();
   };
-  input.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') $(prefix + 'NameOk').click(); };
+  roll();
 }
 nameForm('board', async () => { await sendScore(save.best); loadBoard(); });
 nameForm('over', async () => { showRank(await sendScore(save.best)); });
@@ -1576,6 +1582,31 @@ document.querySelectorAll('#boardScreen .tab').forEach(t => t.onclick = () => { 
 $('boardBtn').onclick = () => { show('boardScreen'); loadBoard(); };
 $('boardBack').onclick = () => show('startScreen');
 if (!BOARD || !BOARD.enabled) $('boardBtn').style.display = 'none';
+if (BOARD && save.name && !BOARD.isValidName(save.name)) { save.name = ''; writeSave(); }   // names from older versions
+// "delete my data": two taps, removes the board entry and forgets the name
+let deleteArmed = false;
+$('boardDelete').onclick = async () => {
+  const b = $('boardDelete');
+  if (!deleteArmed) {
+    deleteArmed = true;
+    b.textContent = 'اضغط مرة أخرى لتأكيد الحذف';
+    b.classList.add('confirm');
+    setTimeout(() => { deleteArmed = false; b.textContent = 'حذف بياناتي من التصنيف'; b.classList.remove('confirm'); }, 3000);
+    return;
+  }
+  deleteArmed = false;
+  b.classList.remove('confirm');
+  try {
+    await BOARD.remove();
+    save.name = '';
+    writeSave();
+    b.textContent = 'تم حذف بياناتك ✓';
+  } catch (e) {
+    console.warn('leaderboard delete:', e);
+    b.textContent = 'تعذّر الحذف، حاول لاحقاً';
+  }
+  loadBoard();
+};
 buildHeroPicker();
 // region cards: free / owned regions are picked, priced ones are bought with cans (two taps)
 let confirmRegion = null, confirmRegionTimer = 0;
@@ -1849,6 +1880,8 @@ loadModels(() => {
   refreshLobby();
   show('startScreen');
 });
+// installable / offline (only over https, the file:// double-click version skips it)
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 window.__saifman = { state, update, startGame, MODELS, camera, hero, CHARACTERS, REGIONS, buildRegions, save, buildShop, buildHeroPicker, portraits, playClip, applyRegion, resetRun, get model() { return model; } };   // debug hook
 })();
 </script>

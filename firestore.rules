@@ -1,7 +1,9 @@
 rules_version = '2';
 // Global leaderboard: one document per player (anonymous auth uid).
 // Anyone can read; a player can only write their own document, only raise
-// their best score, and only once every 15 seconds.
+// their best score, and only once every 15 seconds. Names must come from the
+// game's kid-safe word lists (noun + adjective + number); players may delete
+// their own entry.
 service cloud.firestore {
   match /databases/{database}/documents {
     match /scores/{uid} {
@@ -10,7 +12,7 @@ service cloud.firestore {
       allow update: if signedInAs(uid) && validEntry(request.resource.data)
         && request.resource.data.best >= resource.data.best
         && request.time > resource.data.updated + duration.value(15, 's');
-      allow delete: if false;
+      allow delete: if signedInAs(uid);
     }
     match /{document=**} {
       allow read, write: if false;
@@ -24,7 +26,7 @@ service cloud.firestore {
   function validEntry(d) {
     return d.keys().hasOnly(['name', 'best', 'weekBest', 'week', 'hero', 'region', 'updated'])
       && d.keys().hasAll(['name', 'best', 'weekBest', 'week', 'updated'])
-      && d.name is string && d.name.size() >= 2 && d.name.size() <= 14
+      && d.name is string && d.name.matches('^((صقر|نمر|فهد|أسد|نسر|برق|صاروخ|فارس|بطل|نجم|شهاب|غزال|ذئب|حصان) (سريع|شجاع|ذهبي|لامع|قوي|ذكي|خارق|طائر|نشيط|مرح)|(نجمة|غزالة|فراشة|بطلة|نحلة|موجة|شعلة|سحابة|وردة|قمرة) (سريعة|شجاعة|ذهبية|لامعة|قوية|ذكية|خارقة|طائرة|نشيطة|مرحة)) [1-9][0-9]?$')
       && d.best is int && d.best >= 0 && d.best <= 250000
       && d.weekBest is int && d.weekBest >= 0 && d.weekBest <= d.best
       && d.week is string && d.week.matches('^[0-9]{4}-W[0-9]{2}$')

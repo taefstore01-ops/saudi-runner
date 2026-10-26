@@ -15,17 +15,20 @@
     return `${y}-W${String(w).padStart(2, '0')}`;
   }
 
-  // names: 2-14 letters/digits/spaces, no rude words (kids play this game)
-  const BAD = ['كلب', 'حمار', 'غبي', 'حيوان', 'زق', 'خرا', 'تفو', 'سكس', 'شرموط', 'قحب', 'منيك', 'نيك', 'زب', 'طيز', 'لعن',
-    'fuck', 'shit', 'bitch', 'sex', 'porn', 'dick', 'ass', 'nigg', 'fag', 'cunt', 'whore', 'slut', 'kill'];
-  function checkName(raw) {
-    const name = String(raw || '').replace(/\s+/g, ' ').trim();
-    if (name.length < 2) return { error: 'الاسم قصير، اكتب حرفين على الأقل' };
-    if (name.length > 14) return { error: 'الاسم طويل، الحد 14 حرفاً' };
-    if (!/^[\p{L}\p{N} _-]+$/u.test(name)) return { error: 'استخدم حروفاً وأرقاماً فقط' };
-    const flat = name.toLowerCase().replace(/[\s_-]/g, '').replace(/[أإآ]/g, 'ا').replace(/ة/g, 'ه');
-    if (BAD.some(w => flat.includes(w))) return { error: 'اختر اسماً لطيفاً من فضلك' };
-    return { name };
+  // Kid-safe names (the game targets children): picked from fixed words, never typed.
+  // The same word lists are enforced by firestore.rules.
+  const NAMES = {
+    m: [['صقر', 'نمر', 'فهد', 'أسد', 'نسر', 'برق', 'صاروخ', 'فارس', 'بطل', 'نجم', 'شهاب', 'غزال', 'ذئب', 'حصان'], ['سريع', 'شجاع', 'ذهبي', 'لامع', 'قوي', 'ذكي', 'خارق', 'طائر', 'نشيط', 'مرح']],
+    f: [['نجمة', 'غزالة', 'فراشة', 'بطلة', 'نحلة', 'موجة', 'شعلة', 'سحابة', 'وردة', 'قمرة'], ['سريعة', 'شجاعة', 'ذهبية', 'لامعة', 'قوية', 'ذكية', 'خارقة', 'طائرة', 'نشيطة', 'مرحة']],
+  };
+  const pickOne = a => a[Math.floor(Math.random() * a.length)];
+  function randomName() {
+    const [nouns, adjs] = Math.random() < 0.5 ? NAMES.m : NAMES.f;
+    return `${pickOne(nouns)} ${pickOne(adjs)} ${1 + Math.floor(Math.random() * 99)}`;
+  }
+  function isValidName(name) {
+    const m = /^(\S+) (\S+) ([1-9][0-9]?)$/.exec(String(name || ''));
+    return !!m && [NAMES.m, NAMES.f].some(([n, a]) => n.includes(m[1]) && a.includes(m[2]));
   }
 
   let fb = null;          // { db, uid, fs }
@@ -61,6 +64,12 @@
     return entry;
   }
 
+  /** Removes the player's entry from the board ("delete my data"). */
+  async function remove() {
+    const { db, uid, fs } = await ready();
+    await fs.deleteDoc(fs.doc(db, 'scores', uid));
+  }
+
   /** Top players: kind 'week' or 'all'. */
   async function top(kind, n = 50) {
     const { db, uid, fs } = await ready();
@@ -92,5 +101,5 @@
     return { rank: above + 1, name: v.name, score, hero: v.hero, region: v.region, me: true };
   }
 
-  window.SR_BOARD = { enabled: !!config, ready, submit, top, mine, checkName, weekKey };
+  window.SR_BOARD = { enabled: !!config, ready, submit, remove, top, mine, randomName, isValidName, weekKey };
 })();
