@@ -1,0 +1,35 @@
+rules_version = '2';
+// Global leaderboard: one document per player (anonymous auth uid).
+// Anyone can read; a player can only write their own document, only raise
+// their best score, and only once every 15 seconds.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /scores/{uid} {
+      allow read: if true;
+      allow create: if signedInAs(uid) && validEntry(request.resource.data);
+      allow update: if signedInAs(uid) && validEntry(request.resource.data)
+        && request.resource.data.best >= resource.data.best
+        && request.time > resource.data.updated + duration.value(15, 's');
+      allow delete: if false;
+    }
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+
+  function signedInAs(uid) {
+    return request.auth != null && request.auth.uid == uid;
+  }
+
+  function validEntry(d) {
+    return d.keys().hasOnly(['name', 'best', 'weekBest', 'week', 'hero', 'region', 'updated'])
+      && d.keys().hasAll(['name', 'best', 'weekBest', 'week', 'updated'])
+      && d.name is string && d.name.size() >= 2 && d.name.size() <= 14
+      && d.best is int && d.best >= 0 && d.best <= 250000
+      && d.weekBest is int && d.weekBest >= 0 && d.weekBest <= d.best
+      && d.week is string && d.week.matches('^[0-9]{4}-W[0-9]{2}$')
+      && d.get('hero', '') is string && d.get('hero', '').size() <= 20
+      && d.get('region', '') is string && d.get('region', '').size() <= 20
+      && d.updated == request.time;
+  }
+}

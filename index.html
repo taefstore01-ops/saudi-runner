@@ -90,6 +90,28 @@
   .shake { animation: shake .35s; }
   @keyframes shake { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
   .pick.shop { flex: 0 0 auto; background: linear-gradient(180deg, #2ecc71, #18a058); border-color: rgba(255,255,255,.35); }
+  #boardScreen { justify-content: flex-start; overflow-y: auto; background: rgba(4,12,34,.95); }
+  .tabs { display: flex; gap: 8px; background: rgba(255,255,255,.08); border-radius: 16px; padding: 4px; }
+  .tab { cursor: pointer; border: none; border-radius: 12px; padding: 6px 18px; font-weight: 900; font-size: 16px; background: transparent; color: #fff; }
+  .tab.on { background: var(--gold); color: var(--deep); }
+  .board { width: min(520px, 100%); display: flex; flex-direction: column; gap: 6px; }
+  .row { display: grid; grid-template-columns: 44px 1fr auto; align-items: center; gap: 10px; background: rgba(7,26,74,.8); border: 2px solid rgba(255,255,255,.1); border-radius: 14px; padding: 8px 12px; text-align: right; }
+  .row .rk { font-weight: 900; font-size: 20px; text-align: center; }
+  .row .nm { font-weight: 900; font-size: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .nm small { display: block; font-size: 12px; font-weight: 700; opacity: .65; }
+  .row .sc { font-weight: 900; font-size: 20px; color: var(--gold); }
+  .row.me { border-color: #2ecc71; background: rgba(30,120,80,.55); }
+  .row.r1 .rk { color: #ffd84a; } .row.r2 .rk { color: #d9e2ec; } .row.r3 .rk { color: #e8a065; }
+  .row.sep { background: transparent; border: none; justify-content: center; display: flex; opacity: .5; padding: 0; }
+  #boardMsg { min-height: 22px; }
+  .nameBox { display: none; flex-direction: column; align-items: center; gap: 8px; width: min(420px, 100%); background: rgba(46,204,113,.15); border: 2px solid rgba(46,204,113,.5); border-radius: 18px; padding: 12px; }
+  .nameBox.show { display: flex; }
+  .nameBox .t { font-weight: 900; }
+  .nameRow { display: flex; gap: 8px; width: 100%; }
+  .nameRow input { flex: 1; min-width: 0; font-family: inherit; font-size: 18px; font-weight: 700; border-radius: 12px; border: 2px solid rgba(255,255,255,.3); background: rgba(0,0,0,.35); color: #fff; padding: 6px 12px; text-align: right; }
+  .nameRow button { border: none; border-radius: 12px; padding: 6px 16px; font-weight: 900; font-size: 16px; background: #2ecc71; color: #06301f; cursor: pointer; }
+  .nameErr { color: #ff9aa5; font-size: 13px; min-height: 18px; }
+  #oRank { font-weight: 900; color: #7dffb0; min-height: 22px; }
   .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; width: min(420px, 100%); }
   .stat { background: rgba(7,26,74,.75); border-radius: 16px; padding: 10px 6px; border: 2px solid rgba(255,255,255,.15); }
   .stat .v { font-size: 30px; font-weight: 900; }
@@ -137,7 +159,10 @@
   <div class="lobby-bottom">
     <div class="picker" id="heroPicker"></div>
     <button class="pick" id="regionBtn"><img id="regionImg" alt=""><span class="t"><span id="regionName"></span><small>اضغط لتغيير المنطقة</small></span><span class="arrow">‹</span></button>
-    <button class="btn" id="playBtn">ابدأ الجري</button>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn ghost" id="boardBtn" title="التصنيف العالمي">🏆</button>
+      <button class="btn" id="playBtn">ابدأ الجري</button>
+    </div>
     <div class="hint">
       اجمع <b>علب الطاقة</b> وتفادَ العوائق!
       <span class="kbd">←</span> <span class="kbd">→</span> تغيير المسار ·
@@ -165,6 +190,19 @@
   <button class="btn ghost" id="regionBack">رجوع</button>
 </div>
 
+<div class="screen" id="boardScreen">
+  <div class="sub">🏆 التصنيف العالمي</div>
+  <div class="tabs"><button class="tab on" data-kind="week">هذا الأسبوع</button><button class="tab" data-kind="all">كل الأوقات</button></div>
+  <div class="nameBox" id="boardName">
+    <div class="t">اكتب اسمك ليظهر في التصنيف</div>
+    <div class="nameRow"><input id="boardNameIn" maxlength="14" placeholder="اسمك"><button id="boardNameOk">حفظ</button></div>
+    <div class="nameErr" id="boardNameErr"></div>
+  </div>
+  <div class="hint" id="boardMsg"></div>
+  <div class="board" id="boardList"></div>
+  <button class="btn ghost" id="boardBack">رجوع</button>
+</div>
+
 <div class="screen" id="pauseScreen">
   <div class="sub">إيقاف مؤقت</div>
   <button class="btn" id="resumeBtn">متابعة</button>
@@ -179,6 +217,12 @@
     <div class="stat"><div class="v" id="oCans">0</div><div class="l">العلب</div></div>
     <div class="stat best"><div class="v" id="oBest">0</div><div class="l">أفضل نتيجة</div></div>
   </div>
+  <div id="oRank"></div>
+  <div class="nameBox" id="overName">
+    <div class="t">🏆 سجّل اسمك في التصنيف العالمي</div>
+    <div class="nameRow"><input id="overNameIn" maxlength="14" placeholder="اسمك"><button id="overNameOk">حفظ</button></div>
+    <div class="nameErr" id="overNameErr"></div>
+  </div>
   <button class="btn" id="retryBtn">مرة ثانية</button>
   <button class="btn ghost" id="menuBtn">القائمة</button>
 </div>
@@ -186,6 +230,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="art/regions.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/leaderboard.js"></script>
 <script>
 (() => {
 'use strict';
@@ -238,7 +284,7 @@ const ART = window.SAIFMAN_REGIONS || {};
 
 // ---------- Save ----------
 const save = (() => {
-  const d = { best: 0, cans: 0, hero: 'saif', region: 'riyadh', owned: [], ownedRegions: [] };   // cans = wallet
+  const d = { best: 0, cans: 0, hero: 'saif', region: 'riyadh', owned: [], ownedRegions: [], name: '' };   // cans = wallet
   try { return Object.assign(d, JSON.parse(localStorage.getItem('saifman.save')) || {}); }
   catch (e) { return d; }
 })();
@@ -1374,7 +1420,7 @@ function levelUp(level) {
   toastTimer = setTimeout(() => ui.toast.classList.remove('on'), 1300);
   sfx.level();
 }
-const SCREENS = ['startScreen', 'regionScreen', 'shopScreen', 'pauseScreen', 'overScreen'];
+const SCREENS = ['startScreen', 'regionScreen', 'shopScreen', 'boardScreen', 'pauseScreen', 'overScreen'];
 function show(id) {
   SCREENS.forEach(s => $(s).classList.toggle('show', s === id));
   ui.hud.style.display = (state.mode === 'play' || state.mode === 'paused') ? 'flex' : 'none';
@@ -1467,6 +1513,69 @@ function shopTap(c, card) {
   buildShop();
 }
 $('shopBack').onclick = () => { confirmId = null; show('startScreen'); };
+
+// ---------- global leaderboard ----------
+const BOARD = window.SR_BOARD;
+const heroName = id => (CHARACTERS.find(c => c.id === id) || {}).name || '';
+const regionName = id => (REGIONS.find(r => r.id === id) || {}).name || '';
+const esc = t => String(t).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+let boardKind = 'week';
+
+function boardRow(r, rank) {
+  const sub = [heroName(r.hero), regionName(r.region)].filter(Boolean).join(' · ');
+  const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank;
+  return `<div class="row${r.me ? ' me' : ''}${rank <= 3 ? ' r' + rank : ''}"><div class="rk">${medal}</div>
+    <div class="nm">${esc(r.name)}${r.me ? ' (أنت)' : ''}<small>${esc(sub)}</small></div><div class="sc">${r.score}</div></div>`;
+}
+async function loadBoard() {
+  const list = $('boardList'), msg = $('boardMsg');
+  document.querySelectorAll('#boardScreen .tab').forEach(t => t.classList.toggle('on', t.dataset.kind === boardKind));
+  $('boardName').classList.toggle('show', !save.name);
+  list.innerHTML = '';
+  if (!BOARD || !BOARD.enabled) { msg.textContent = 'التصنيف العالمي غير متاح حالياً'; return; }
+  msg.textContent = 'جاري التحميل...';
+  try {
+    const [rows, me] = await Promise.all([BOARD.top(boardKind), BOARD.mine(boardKind)]);
+    if (!rows.length) { msg.textContent = boardKind === 'week' ? 'لا توجد نتائج هذا الأسبوع بعد، كن أول المتصدرين!' : 'لا توجد نتائج بعد'; return; }
+    msg.textContent = boardKind === 'week' ? 'يتجدد التصنيف كل أسبوع' : 'أفضل النتائج منذ البداية';
+    let html = rows.map((r, i) => boardRow(r, i + 1)).join('');
+    if (me && !rows.some(r => r.me)) html += '<div class="row sep">• • •</div>' + boardRow(me, me.rank);
+    list.innerHTML = html;
+  } catch (e) {
+    console.warn('leaderboard:', e);
+    msg.textContent = 'تعذّر تحميل التصنيف، تأكد من الاتصال بالإنترنت';
+  }
+}
+// sends the player's best to the board (only once they have a name)
+async function sendScore(score) {
+  if (!BOARD || !BOARD.enabled || !save.name) return null;
+  try {
+    await BOARD.submit({ name: save.name, score, hero: save.hero, region: save.region });
+    return await BOARD.mine('week');
+  } catch (e) { console.warn('leaderboard submit:', e); return null; }
+}
+function nameForm(prefix, after) {
+  const input = $(prefix + 'NameIn'), err = $(prefix + 'NameErr');
+  $(prefix + 'NameOk').onclick = async () => {
+    const r = BOARD.checkName(input.value);
+    if (r.error) { err.textContent = r.error; return; }
+    err.textContent = '';
+    save.name = r.name;
+    writeSave();
+    $(prefix + 'Name').classList.remove('show');
+    await after();
+  };
+  input.onkeydown = e => { e.stopPropagation(); if (e.key === 'Enter') $(prefix + 'NameOk').click(); };
+}
+nameForm('board', async () => { await sendScore(save.best); loadBoard(); });
+nameForm('over', async () => { showRank(await sendScore(save.best)); });
+function showRank(me) {
+  $('oRank').textContent = me ? `ترتيبك هذا الأسبوع: #${me.rank}` : '';
+}
+document.querySelectorAll('#boardScreen .tab').forEach(t => t.onclick = () => { boardKind = t.dataset.kind; loadBoard(); });
+$('boardBtn').onclick = () => { show('boardScreen'); loadBoard(); };
+$('boardBack').onclick = () => show('startScreen');
+if (!BOARD || !BOARD.enabled) $('boardBtn').style.display = 'none';
 buildHeroPicker();
 // region cards: free / owned regions are picked, priced ones are bought with cans (two taps)
 let confirmRegion = null, confirmRegionTimer = 0;
@@ -1558,7 +1667,10 @@ function gameOver() {
     $('oCans').textContent = state.cans;
     $('oBest').textContent = save.best;
     $('newBest').style.display = isBest ? 'block' : 'none';
+    $('oRank').textContent = '';
+    $('overName').classList.toggle('show', !!(BOARD && BOARD.enabled && !save.name && score > 0));
     show('overScreen');
+    if (save.name && score > 0) sendScore(score).then(showRank);
   }, model && model.actions.fall ? 1500 : 900);
 }
 $('playBtn').onclick = startGame;

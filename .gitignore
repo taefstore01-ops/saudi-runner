@@ -1,3 +1,4 @@
 # the game loads models/*.js; the compressed .glb copies are only a by-product of tools/wrap_model.py
 models/*.glb
 __pycache__/
+.firebase/
