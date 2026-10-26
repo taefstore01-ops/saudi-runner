@@ -2,3 +2,4 @@
 models/*.glb
 __pycache__/
 .firebase/
+store/*.aab
